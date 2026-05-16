@@ -288,7 +288,7 @@ with tab1:
                     if name in str(val): color = code
                 return f'background-color: {color}; color: black; border: 1px solid white; font-weight: bold'
 
-            st.dataframe(matrix.style.applymap(colorize), use_container_width=True, height=600)
+            st.dataframe(matrix.style.map(colorize), use_container_width=True, height=600)
     else:
         st.info("لا توجد بيانات.")
 
@@ -432,9 +432,9 @@ with tab5:
     # 2. إضافة سمسار
     with col_set2:
         with st.form("add_broker_form"):
-            st.subheader("👤 إضافة سمسار جديد")
+            st.subheader("👤 إضافة بروكر جديد")
             new_broker_name = st.text_input("اسم السمسار الجديد")
-            if st.form_submit_button("إضافة السمسار"):
+            if st.form_submit_button("إضافة بروكر"):
                 if new_broker_name and new_broker_name not in ALL_BROKERS_NAMES:
                     # توليد لون عشوائي
                     rand_color = get_random_pastel_color()
