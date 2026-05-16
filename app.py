@@ -15,7 +15,7 @@ st.set_page_config(page_title="نظام الشاليهات", layout="wide", page
 # ==========================================
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght=400;700&display=swap');
 
     html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
         font-family: 'Cairo', sans-serif !important;
@@ -72,26 +72,25 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # العنوان الرئيسي
-st.title("🏡 نظام إدارة شاليهات سفاري جروب ")
+st.title("🏡 نظام إدارة شاليهات سفاري جروب")
 
 # ==========================================
 # 2. دوال الاتصال والتعامل مع الداتا والإعدادات
 # ==========================================
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- الثوابت الافتراضية (عشان لو الشيت فاضي) ---
+# --- الثوابت الافتراضية ---
 DEFAULT_BROKERS = {
     "نجلاء": "#fff59d", 
     "مي": "#e1bee7",    
     "أحمد": "#c8e6c9",  
     "بسملة": "#ffcdd2"  
 }
-DEFAULT_CHALETS =  ["3 غرف 1111", "7435عماره3غرف", "3024غرفتين ارضي ", "3317غرفتين علوي ","6313غرفتين علوي","11304اليخت غرفتين","5301السفينه","5201ريفير","5202تيتانك","5201Aاطلنتس","5202Aارابيسك ","3غرف 3401a"]
+DEFAULT_CHALETS = ["شاليه أحمد", "شاليه محمد", "شاليه سارة", "شاليه البحر", "شاليه 5"]
 
-# دالة لجلب الإعدادات (الشاليهات والسماسرة الجدد)
+# دالة لجلب الإعدادات
 def get_config_data():
     try:
-        # بنقرأ من شيت اسمه Config
         df = conn.read(worksheet="Config", ttl=0)
         df = df.dropna(how='all')
         return df
@@ -106,7 +105,7 @@ def add_config_item(item_type, name, color=None):
     conn.update(worksheet="Config", data=updated_df)
     st.cache_data.clear()
 
-# دالة لتوليد لون عشوائي فاتح (Pastel)
+# دالة لتوليد لون عشوائي فاتح
 def get_random_pastel_color():
     r = random.randint(200, 255)
     g = random.randint(200, 255)
@@ -117,17 +116,17 @@ def get_random_pastel_color():
 config_df = get_config_data()
 
 # 1. قائمة الشاليهات
-new_chalets = config_df[config_df['Type'] == 'Chalet']['Name'].tolist()
-ALL_CHALETS = sorted(list(set(DEFAULT_CHALETS + new_chalets))) # set لمنع التكرار
+new_chalets = config_df[config_df['Type'] == 'Chalet']['Name'].tolist() if not config_df.empty else []
+ALL_CHALETS = sorted(list(set(DEFAULT_CHALETS + new_chalets)))
 
 # 2. قائمة السماسرة والألوان
 ALL_BROKERS_COLORS = DEFAULT_BROKERS.copy()
-new_brokers_df = config_df[config_df['Type'] == 'Broker']
-for _, row in new_brokers_df.iterrows():
-    ALL_BROKERS_COLORS[row['Name']] = row['Color']
+if not config_df.empty:
+    new_brokers_df = config_df[config_df['Type'] == 'Broker']
+    for _, row in new_brokers_df.iterrows():
+        ALL_BROKERS_COLORS[row['Name']] = row['Color']
 
 ALL_BROKERS_NAMES = list(ALL_BROKERS_COLORS.keys())
-
 
 # --- دوال البيانات الأساسية ---
 def get_data():
@@ -187,8 +186,7 @@ def check_availability(chalet, start, end):
 # ==========================================
 # 3. واجهة المستخدم (Tabs)
 # ==========================================
-# إضافة تاب الإعدادات في النهاية
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📅 الحجوزات والجدول", "⏳ الحجوزات غير المؤكدة", "❌ سجل الإلغاء", "📊 التحليل المالي", "⚙️ الإعدادات"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📅 الحجوزات والجدول", "⏳ الحجوزات المعلقة", "❌ سجل الإلغاء", "📊 التحليل المالي", "⚙️ الإعدادات"])
 
 # === التاب 1: الحجز والجدول ===
 with tab1:
@@ -197,7 +195,6 @@ with tab1:
         with st.form("booking_form"):
             c1, c2, c3 = st.columns(3)
             with c1:
-                # استخدام القوائم الديناميكية المحدثة
                 chalet_name = st.selectbox("الشاليه", ALL_CHALETS)
                 broker_name = st.selectbox("السمسار", ALL_BROKERS_NAMES)
             with c2:
@@ -245,7 +242,7 @@ with tab1:
 
     st.markdown("---")
     
-    st.subheader("📅 الحجوزات")
+    st.subheader("📅 خريطة الإشغال")
     df = get_data()
     if not df.empty:
         grid = []
@@ -283,18 +280,18 @@ with tab1:
                     return 'background-color: #eeeeee; color: #555; border: 1px solid white; font-style: italic;'
                 
                 color = "#e0e0e0"
-                # استخدام خريطة الألوان المحدثة
                 for name, code in ALL_BROKERS_COLORS.items():
                     if name in str(val): color = code
                 return f'background-color: {color}; color: black; border: 1px solid white; font-weight: bold'
 
+            # ✅ هنا تم التعديل من applymap لـ map
             st.dataframe(matrix.style.map(colorize), use_container_width=True, height=600)
     else:
         st.info("لا توجد بيانات.")
 
 # === التاب 2: الحجوزات المعلقة ===
 with tab2:
-    st.header("⏳ الحجوزات (غير المؤكدة)")
+    st.header("⏳ الحجوزات المعلقة (غير المؤكدة)")
     df_pending = get_data()
     if not df_pending.empty and 'Status' in df_pending.columns:
         df_pending = df_pending[df_pending['Status'] == 'غير مؤكد']
@@ -407,14 +404,13 @@ with tab4:
     else:
         st.info("لا توجد بيانات.")
 
-# === التاب 5: الإعدادات (جديد) ===
+# === التاب 5: الإعدادات ===
 with tab5:
     st.header("⚙️ إعدادات النظام")
     st.info("يمكنك هنا إضافة شاليهات جديدة أو سماسرة جدد للنظام بشكل دائم.")
     
     col_set1, col_set2 = st.columns(2)
     
-    # 1. إضافة شاليه
     with col_set1:
         with st.form("add_chalet_form"):
             st.subheader("🏠 إضافة شاليه جديد")
@@ -429,14 +425,12 @@ with tab5:
                 else:
                     st.error("يرجى كتابة الاسم.")
     
-    # 2. إضافة سمسار
     with col_set2:
         with st.form("add_broker_form"):
-            st.subheader("👤 إضافة بروكر جديد")
+            st.subheader("👤 إضافة سمسار جديد")
             new_broker_name = st.text_input("اسم السمسار الجديد")
-            if st.form_submit_button("إضافة بروكر"):
+            if st.form_submit_button("إضافة السمسار"):
                 if new_broker_name and new_broker_name not in ALL_BROKERS_NAMES:
-                    # توليد لون عشوائي
                     rand_color = get_random_pastel_color()
                     add_config_item("Broker", new_broker_name, rand_color)
                     st.success(f"تم إضافة {new_broker_name} وتم تعيين لون له ({rand_color}) 🎨")
@@ -456,9 +450,9 @@ with tab5:
     
     with ls2:
         st.write("**السماسرة المسجلين وألوانهم:**")
-        # عرض الألوان كخلفية
         brokers_display = []
         for name, color in ALL_BROKERS_COLORS.items():
             brokers_display.append({"السمسار": name, "كود اللون": color})
         
-        st.dataframe(pd.DataFrame(brokers_display).style.applymap(lambda x: f'background-color: {x}' if x.startswith('#') else '', subset=['كود اللون']), use_container_width=True)
+        # ✅ هنا تم التعديل من applymap لـ map لحل المشكلة الثانية
+        st.dataframe(pd.DataFrame(brokers_display).style.map(lambda x: f'background-color: {x}' if str(x).startswith('#') else '', subset=['كود اللون']), use_container_width=True)
