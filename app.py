@@ -116,7 +116,7 @@ def get_random_pastel_color():
 config_df = get_config_data()
 
 # 1. قائمة الشاليهات
-new_chalets = config_df[config_df['Type'] == 'Chalet']['Name'].tolist() if not config_df.empty else []
+new_chalets = config_df[config_df['Type'] == 'Chalet']['Name'].astype(str).tolist() if not config_df.empty else []
 ALL_CHALETS = sorted(list(set(DEFAULT_CHALETS + new_chalets)))
 
 # 2. قائمة السماسرة والألوان
@@ -242,7 +242,7 @@ with tab1:
 
     st.markdown("---")
     
-    st.subheader("📅 خريطة الإشغال")
+    st.subheader("📅 الشيت")
     df = get_data()
     if not df.empty:
         grid = []
